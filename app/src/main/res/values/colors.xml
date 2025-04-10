@@ -1,0 +1,13 @@
+<resources>
+    <!-- Primary colors -->
+    <color name="primary">#6200EE</color> <!-- Основной цвет (фиолетовый) -->
+    <color name="on_primary">#FFFFFF</color> <!-- Цвет текста на основном цвете -->
+
+    <!-- Background colors -->
+    <color name="background">#FFFFFF</color> <!-- Цвет фона -->
+    <color name="on_background">#000000</color> <!-- Цвет текста на фоне -->
+
+    <!-- Surface colors -->
+    <color name="surface">#FFFFFF</color> <!-- Цвет поверхности (например, карточки) -->
+    <color name="on_surface">#000000</color> <!-- Цвет текста на поверхности -->
+</resources>
