@@ -20,19 +20,32 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreen(navController: NavController) {
+    val viewModel: SettingsViewModel = viewModel()
     val cars = remember { generateSampleCars() }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    val filteredCars = remember(searchQuery) {
-        if (searchQuery.isBlank()) {
+    val sortMode by viewModel.sortMode.collectAsState()
+
+    // Фильтрация и сортировка
+    val filteredCars = remember(searchQuery, sortMode) {
+        val filtered = if (searchQuery.isBlank()) {
             cars
         } else {
             cars.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+
+        when (sortMode) {
+            SettingsViewModel.SortMode.ASCENDING -> filtered.sortedBy { it.pricePerDay }
+            SettingsViewModel.SortMode.DESCENDING -> filtered.sortedByDescending { it.pricePerDay }
+            else -> filtered
         }
     }
 
@@ -47,16 +60,30 @@ fun MainAppScreen(navController: NavController) {
                 onQueryChange = { searchQuery = it },
                 onSearch = {
                     if (searchQuery.isNotBlank()) {
-                        isLoading = true // Показать экран загрузки
+                        isLoading = true
                     }
                 },
                 active = isSearchActive,
                 onActiveChange = { isSearchActive = it },
                 placeholder = { Text("Введите марку автомобиля") },
-                leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) }
-            ) {
+                leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+                trailingIcon = {
+                    var showDialog by remember { mutableStateOf(false) } // Управление состоянием диалога
 
-            }
+                    IconButton(onClick = { showDialog = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_filter),
+                            contentDescription = "Фильтр"
+                        )
+                    }
+
+                    if (showDialog) {
+                        showSortDialog(viewModel = viewModel) {
+                            showDialog = false // Закрыть диалог
+                        }
+                    }
+                }
+            ) {}
         },
         bottomBar = {
             BottomAppBar(
@@ -111,15 +138,13 @@ fun MainAppScreen(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (isLoading) {
-                // Экран загрузки
                 LoadingScreen()
                 LaunchedEffect(Unit) {
-                    kotlinx.coroutines.delay(3000) // Имитация загрузки
+                    delay(3000)
                     isLoading = false
                 }
             } else {
                 Column {
-                    // Заголовок в зависимости от состояния
                     Text(
                         text = if (searchQuery.isNotBlank()) "Результаты поиска" else "Давайте найдем автомобиль",
                         style = MaterialTheme.typography.titleLarge,
@@ -138,6 +163,65 @@ fun MainAppScreen(navController: NavController) {
                 }
             }
         }
+    }
+}
+
+// Диалог выбора фильтра
+@Composable
+private fun showSortDialog(viewModel: SettingsViewModel, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Сортировка") },
+        text = {
+            Column {
+                SortOptionItem(
+                    text = "По возрастанию цены",
+                    selected = viewModel.sortMode.collectAsState().value == SettingsViewModel.SortMode.ASCENDING,
+                    onClick = {
+                        viewModel.setSortMode(SettingsViewModel.SortMode.ASCENDING)
+                        onDismiss()
+                    }
+                )
+                SortOptionItem(
+                    text = "По убыванию цены",
+                    selected = viewModel.sortMode.collectAsState().value == SettingsViewModel.SortMode.DESCENDING,
+                    onClick = {
+                        viewModel.setSortMode(SettingsViewModel.SortMode.DESCENDING)
+                        onDismiss()
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SortOptionItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
 
@@ -292,16 +376,16 @@ private fun generateSampleCars(): List<CarItem> = listOf(
     ),
     CarItem(
         id = 2,
-        name = "Hyundai Elantra VI",
-        pricePerDay = 3200,
+        name = "Hyundai Kona",
+        pricePerDay = 3400,
         transmissionType = "Автомат",
         fuelType = "Гибрид",
         imageUrl = R.drawable.car_hyundai
     ),
     CarItem(
         id = 3,
-        name = "Hyundai Elantra VI",
-        pricePerDay = 3200,
+        name = "Hyundai Solaris",
+        pricePerDay = 3300,
         transmissionType = "Автомат",
         fuelType = "Гибрид",
         imageUrl = R.drawable.car_hyundai

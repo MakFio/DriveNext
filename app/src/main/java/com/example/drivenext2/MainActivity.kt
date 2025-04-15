@@ -28,13 +28,14 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel = viewModel<SettingsViewModel>()
             val currentTheme by settingsViewModel.currentTheme.collectAsState()
 
-            DriveNext2Theme(
-                darkTheme = when (currentTheme) {
-                    SettingsViewModel.ThemeMode.SYSTEM -> isSystemInDarkTheme()
-                    SettingsViewModel.ThemeMode.DARK -> true
-                    SettingsViewModel.ThemeMode.LIGHT -> false
-                }
-            ) {
+            // Определяем текущую тему в @Composable контексте
+            val isDarkTheme = when (currentTheme) {
+                SettingsViewModel.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                SettingsViewModel.ThemeMode.DARK -> true
+                SettingsViewModel.ThemeMode.LIGHT -> false
+            }
+
+            DriveNext2Theme(darkTheme = isDarkTheme) {
                 val navController = rememberNavController()
                 var hasInternet by remember { mutableStateOf(isNetworkAvailable(this)) }
                 var showSplash by remember { mutableStateOf(true) }
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
                                 MainAppScreen(navController)
                             }
                             composable("settings") {
-                                SettingsScreen(navController)
+                                SettingsScreen(navController = navController, viewModel = settingsViewModel)
                             }
                             composable("profile") {
                                 ProfileScreen(navController = navController, viewModel = viewModel())

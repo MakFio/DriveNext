@@ -33,4 +33,15 @@ class SettingsViewModel : ViewModel() {
     fun clearProfileImage() = viewModelScope.launch {
         _profileImageUri.emit(null)
     }
+    // Фильтр сортировки
+    enum class SortMode {
+        NONE, ASCENDING, DESCENDING
+    }
+
+    private val _sortMode = MutableStateFlow(SortMode.NONE)
+    val sortMode: StateFlow<SortMode> = _sortMode
+
+    fun setSortMode(mode: SortMode) = viewModelScope.launch {
+        _sortMode.emit(mode)
+    }
 }
